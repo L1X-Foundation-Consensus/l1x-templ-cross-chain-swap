@@ -1,9 +1,5 @@
 {
-  "packages": [
-    "clang_16@16.0.6",
-    "llvm_16@16.0.1",
-    "cassandra_4@4.1.2"
-  ],
+  "packages": ["clang_16@16.0.6", "llvm_16@16.0.1", "cassandra_4@4.1.2"],
   "env": {
     "CASSANDRA_DATA": "$PWD/l1x-conf/cassandra_data",
     "L1X_BUILD_CFG_ARTIFACTS_PATH": "$PWD/l1x-artifacts",
@@ -12,9 +8,7 @@
     "L1X_VALIDATOR_PRIVATE_KEY_DEV": "6d657bbe6f7604fb53bc22e0b5285d3e2ad17f64441b2dc19b648933850f9b46"
   },
   "shell": {
-    "init_hook": [
-      "echo 'Welcome to devbox!' > /dev/null"
-    ],
+    "init_hook": ["echo 'Welcome to devbox!' > /dev/null"],
     "scripts": {
       "05_start_devnode": [
         "echo 'Start L1X devnode services...'",
@@ -42,9 +36,7 @@
         "$L1X_BUILD_CFG_TOOLS_PATH/wasm-llvmir $L1X_BUILD_CFG_ARTIFACTS_PATH/$L1X_BUILD_CFG_CONTRACT_NAME.wasm",
         "$L1X_BUILD_CFG_TOOLS_PATH/build_ebpf.sh $L1X_BUILD_CFG_ARTIFACTS_PATH/$L1X_BUILD_CFG_CONTRACT_NAME.ll"
       ],
-      "11_clean": [
-        "cargo clean"
-      ],
+      "11_clean": ["cargo clean"],
       "12_deploy_contract": [
         "echo Deploying Contract $L1X_BUILD_CFG_CONTRACT_NAME",
         "RUST_LOG=info $L1X_BUILD_CFG_TOOLS_PATH/cli --private-key $L1X_VALIDATOR_PRIVATE_KEY_DEV submit-txn --payload-file-path l1x-conf/scripts/010-01-uc-cc-swap-deploy.json"
@@ -52,6 +44,11 @@
       "13_init_contract": [
         "echo Deploying Contract $L1X_BUILD_CFG_CONTRACT_NAME",
         "RUST_LOG=info $L1X_BUILD_CFG_TOOLS_PATH/cli --private-key $L1X_VALIDATOR_PRIVATE_KEY_DEV submit-txn --payload-file-path l1x-conf/scripts/010-02-uc-cc-swap-init.json"
+      ],
+      "14_init_setup": [
+        "echo Initializing Setup",
+        "mkdir -p ./l1x-artifacts",
+        "mkdir -p ./l1x-conf/cassandra_data"
       ]
     }
   }
