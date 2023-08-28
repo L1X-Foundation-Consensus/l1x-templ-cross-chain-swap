@@ -38,6 +38,7 @@ processes:
       - 'L1X_EXPOSED_PORT=8080'
       - 'DEV_MODE=true'
       - 'CASSANDRA_HOST=127.0.0.1'
+      - 'CASSANDRA_PORT=9043'
       - 'RUST_LOG=trace'
       - 'GRPC_HOST=http://127.0.0.1:50052'
       - 'JSON_RPC_HOST=http://127.0.0.1:50051'

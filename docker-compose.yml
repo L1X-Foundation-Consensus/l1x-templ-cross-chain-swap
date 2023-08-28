@@ -4,7 +4,7 @@ services:
   cassandra:
     image: cassandra
     ports:
-      - 9042:9042
+      - 9043:9043
     volumes:
       - ./l1x-conf/cassandra_data:/var/lib/cassandra
     restart: on-failure
