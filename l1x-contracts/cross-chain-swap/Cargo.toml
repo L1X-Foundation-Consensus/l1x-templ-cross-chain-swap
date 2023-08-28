@@ -1,5 +1,5 @@
 [package]
-name = "cross-chain-swap"
+name = "cross_chain_swap"
 version = "0.1.0"
 edition = "2021"
 

@@ -1,24 +1,23 @@
 {
   "lockfile_version": "1",
   "packages": {
-    "libiconv@latest": {
-      "last_modified": "2023-05-18T17:48:07Z",
-      "resolved": "github:NixOS/nixpkgs/7721e0d2c1845c24eafd5a016b9d349187c48097#libiconv",
+    "cassandra_4@4.1.2": {
+      "last_modified": "2023-06-30T04:44:22Z",
+      "resolved": "github:NixOS/nixpkgs/3c614fbc76fc152f3e1bc4b2263da6d90adf80fb#cassandra_4",
       "source": "devbox-search",
-      "version": "50"
+      "version": "4.1.2"
     },
-    "llvm_16@latest": {
+    "clang_16@16.0.6": {
+      "last_modified": "2023-07-23T03:35:12Z",
+      "resolved": "github:NixOS/nixpkgs/af8cd5ded7735ca1df1a1174864daab75feeb64a#clang_16",
+      "source": "devbox-search",
+      "version": "16.0.6"
+    },
+    "llvm_16@16.0.1": {
       "last_modified": "2023-05-14T19:13:12Z",
       "resolved": "github:NixOS/nixpkgs/3007746b3f5bfcb49e102b517bca891822a41b31#llvm_16",
       "source": "devbox-search",
       "version": "16.0.1"
-    },
-    "rustup@latest": {
-      "last_modified": "2023-06-30T04:44:22Z",
-      "plugin_version": "0.0.1",
-      "resolved": "github:NixOS/nixpkgs/3c614fbc76fc152f3e1bc4b2263da6d90adf80fb#rustup",
-      "source": "devbox-search",
-      "version": "1.26.0"
     }
   }
 }

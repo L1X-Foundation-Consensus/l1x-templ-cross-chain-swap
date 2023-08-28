@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  cassandra:
+    image: cassandra
+    ports:
+      - 9042:9042
+    volumes:
+      - ./l1x-conf/cassandra_data:/var/lib/cassandra
+    restart: on-failure
+    env_file:
+      - l1x-conf/casandra.env
+    healthcheck:
+      test: ["CMD", "nodetool", "status"]
+      interval: 15s
+      timeout: 7s
+      retries: 3
+      start_period: 30s
