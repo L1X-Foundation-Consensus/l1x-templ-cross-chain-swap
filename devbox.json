@@ -2,6 +2,8 @@
   "packages": ["clang_16@16.0.6", "llvm_16@16.0.1", "cassandra_4@4.1.2"],
   "env": {
     "CASSANDRA_DATA": "$PWD/l1x-conf/cassandra_data",
+    "CASSANDRA_HOST": "127.0.0.1",
+    "CASSANDRA_PORT": "9042",
     "L1X_BUILD_CFG_ARTIFACTS_PATH": "$PWD/l1x-artifacts",
     "L1X_BUILD_CFG_CONTRACT_NAME": "cross_chain_swap",
     "L1X_BUILD_CFG_TOOLS_PATH": "$PWD/l1x-tools",
@@ -26,7 +28,7 @@
       ],
       "08_check_devnode_state": [
         "echo 'Get L1X devnode services state...'",
-        "cqlsh -e 'SELECT * FROM system.local;'",
+        "cqlsh -e 'SELECT * FROM system.local;' $CASSANDRA_HOST $CASSANDRA_PORT",
         "$L1X_BUILD_CFG_TOOLS_PATH/cli chain-state"
       ],
       "10_compile": [
@@ -39,11 +41,11 @@
       "11_clean": ["cargo clean"],
       "12_deploy_contract": [
         "echo Deploying Contract $L1X_BUILD_CFG_CONTRACT_NAME",
-        "RUST_LOG=info $L1X_BUILD_CFG_TOOLS_PATH/cli --private-key $L1X_VALIDATOR_PRIVATE_KEY_DEV submit-txn --payload-file-path l1x-conf/scripts/010-01-uc-cc-swap-deploy.json"
+        "RUST_LOG=info $L1X_BUILD_CFG_TOOLS_PATH/cli submit-txn --config-file-path l1x-conf/scripts/020-01-uc-cc-swap-deploy.json"
       ],
       "13_init_contract": [
         "echo Deploying Contract $L1X_BUILD_CFG_CONTRACT_NAME",
-        "RUST_LOG=info $L1X_BUILD_CFG_TOOLS_PATH/cli --private-key $L1X_VALIDATOR_PRIVATE_KEY_DEV submit-txn --payload-file-path l1x-conf/scripts/010-02-uc-cc-swap-init.json"
+        "RUST_LOG=info $L1X_BUILD_CFG_TOOLS_PATH/cli  submit-txn --config-file-path l1x-conf/scripts/020-02-uc-cc-swap-init.json"
       ],
       "14_init_setup": [
         "echo Initializing Setup",

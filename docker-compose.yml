@@ -2,9 +2,9 @@ version: '3.8'
 
 services:
   cassandra:
-    image: cassandra
+    image: cassandra:3.11.16
     ports:
-      - 9043:9043
+      - $CASSANDRA_PORT:$CASSANDRA_PORT
     volumes:
       - ./l1x-conf/cassandra_data:/var/lib/cassandra
     restart: on-failure
