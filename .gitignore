@@ -1,5 +1,4 @@
 target
 .devbox
-l1x-conf/cassandra_data/*
 l1x-artifacts/*
 devbox-services.log

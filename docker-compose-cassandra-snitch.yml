@@ -1,0 +1,56 @@
+version: "3"
+services:
+  cassandra1:
+    image: cassandra:latest
+    container_name: cassandra1
+    environment:
+      - CASSANDRA_ENDPOINT_SNITCH=SimpleSnitch
+      - CASSANDRA_DC=datacenter1
+      - CASSANDRA_RACK=rack1
+      - CASSANDRA_CLUSTER_NAME=l1x-cassandra
+      - CASSANDRA_BROADCAST_ADDRESS=cassandra1
+      - CASSANDRA_LISTEN_ADDRESS=cassandra1
+    volumes:
+      - cassandra1_data:/var/lib/cassandra
+      - ./l1x-conf/cassandra-env.sh:/etc/cassandra/cassandra-env.sh
+    networks:
+      - cassandra-network
+    healthcheck:
+      test: ["CMD", "nodetool", "status"]
+      interval: 15s
+      timeout: 7s
+      retries: 3
+      start_period: 30s
+    ports:
+      - $CASSANDRA_PORT:$CASSANDRA_PORT
+      - "7199:7199"
+
+  cassandra2:
+    image: cassandra:latest
+    container_name: cassandra2
+    environment:
+      - CASSANDRA_ENDPOINT_SNITCH=SimpleSnitch
+      - CASSANDRA_DC=datacenter1
+      - CASSANDRA_RACK=rack2
+      - CASSANDRA_SEEDS=cassandra1
+      - CASSANDRA_CLUSTER_NAME=l1x-cassandra
+      - CASSANDRA_LISTEN_ADDRESS=cassandra2
+    volumes:
+      - cassandra2_data:/var/lib/cassandra
+    networks:
+      - cassandra-network
+    healthcheck:
+      test: ["CMD", "nodetool", "status"]
+      interval: 15s
+      timeout: 7s
+      retries: 3
+      start_period: 30s
+    depends_on:
+      - cassandra1
+
+volumes:
+  cassandra1_data:
+  cassandra2_data:
+
+networks:
+  cassandra-network:

@@ -14,6 +14,8 @@ serde = { version = "1", features = ["derive"] }
 serde_json = { version = "1" }
 bincode = { version = "2.0.0-rc" }
 sha2 = "0.9"
+base64 = "*"
+ethers = "2.0"
 
 # l1x-sdk dependencies
-l1x-sdk = { git = "https://github.com/L1X-Foundation-VM/l1x-templ-sdk.git", package = "l1x-sdk", branch = "main" }
+l1x-sdk = { git = "https://github.com/L1X-Foundation-VM/l1x-templ-sdk.git", package = "l1x-sdk", version = "0.1.1" }

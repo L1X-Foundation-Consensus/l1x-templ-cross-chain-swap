@@ -1,13 +1,14 @@
 {
   "packages": ["clang_16@16.0.6", "llvm_16@16.0.1", "cassandra_4@4.1.2"],
   "env": {
-    "CASSANDRA_DATA": "$PWD/l1x-conf/cassandra_data",
     "CASSANDRA_HOST": "127.0.0.1",
     "CASSANDRA_PORT": "9042",
+    "REPLICATION_ENABLED": "true",
     "L1X_BUILD_CFG_ARTIFACTS_PATH": "$PWD/l1x-artifacts",
     "L1X_BUILD_CFG_CONTRACT_NAME": "cross_chain_swap",
     "L1X_BUILD_CFG_TOOLS_PATH": "$PWD/l1x-tools",
-    "L1X_VALIDATOR_PRIVATE_KEY_DEV": "6d657bbe6f7604fb53bc22e0b5285d3e2ad17f64441b2dc19b648933850f9b46"
+    "VALIDATOR_PRIVATE_KEY_DEV": "6d657bbe6f7604fb53bc22e0b5285d3e2ad17f64441b2dc19b648933850f9b46",
+    "VALIDATOR_PUBLIC_KEY_DEV": "0215edb7e9a64f9970c60d94b866b73686980d734874382ad1002700e5d870d945"
   },
   "shell": {
     "init_hook": ["echo 'Welcome to devbox!' > /dev/null"],
@@ -19,12 +20,15 @@
       "06_stop_devnode": [
         "echo 'Stop L1X devnode services...'",
         "devbox services stop",
+        "pkill server",
+        "docker-compose -f docker-compose-cassandra-snitch.yml down",
         "echo 'Stop L1X devnode services... Done!!!'"
       ],
       "07_prune_devnode": [
         "echo 'Prune L1X devnode service resources...'",
         "docker-compose down",
-        "sudo rm -Rf $CASSANDRA_DATA/*"
+        "docker volume rm l1x-templ-cross-chain-swap_cassandra1_data",
+        "docker volume rm l1x-templ-cross-chain-swap_cassandra2_data"
       ],
       "08_check_devnode_state": [
         "echo 'Get L1X devnode services state...'",
@@ -33,7 +37,8 @@
       ],
       "10_compile": [
         "echo 'Compiling Contract $L1X_BUILD_CFG_CONTRACT_NAME ...'",
-        "RUSTFLAGS='-C link-arg=-s' cargo build --release -p $L1X_BUILD_CFG_CONTRACT_NAME --target wasm32-unknown-unknown",
+        "if [ ! -d $L1X_BUILD_CFG_ARTIFACTS_PATH ]; then mkdir $L1X_BUILD_CFG_ARTIFACTS_PATH; fi",
+        "cd ./l1x-contracts/cross-chain-swap && ./build.sh",
         "cp target/wasm32-unknown-unknown/release/$L1X_BUILD_CFG_CONTRACT_NAME.wasm $L1X_BUILD_CFG_ARTIFACTS_PATH/.",
         "$L1X_BUILD_CFG_TOOLS_PATH/wasm-llvmir $L1X_BUILD_CFG_ARTIFACTS_PATH/$L1X_BUILD_CFG_CONTRACT_NAME.wasm",
         "$L1X_BUILD_CFG_TOOLS_PATH/build_ebpf.sh $L1X_BUILD_CFG_ARTIFACTS_PATH/$L1X_BUILD_CFG_CONTRACT_NAME.ll"
@@ -41,11 +46,11 @@
       "11_clean": ["cargo clean"],
       "12_deploy_contract": [
         "echo Deploying Contract $L1X_BUILD_CFG_CONTRACT_NAME",
-        "RUST_LOG=info $L1X_BUILD_CFG_TOOLS_PATH/cli submit-txn --config-file-path l1x-conf/scripts/020-01-uc-cc-swap-deploy.json"
+        "RUST_LOG=info $L1X_BUILD_CFG_TOOLS_PATH/cli --private-key $VALIDATOR_PRIVATE_KEY_DEV submit-txn --payload-file-path l1x-conf/scripts/010-01-uc-cc-swap-deploy.json"
       ],
       "13_init_contract": [
-        "echo Deploying Contract $L1X_BUILD_CFG_CONTRACT_NAME",
-        "RUST_LOG=info $L1X_BUILD_CFG_TOOLS_PATH/cli  submit-txn --config-file-path l1x-conf/scripts/020-02-uc-cc-swap-init.json"
+        "echo Init Contract $L1X_BUILD_CFG_CONTRACT_NAME",
+        "RUST_LOG=info $L1X_BUILD_CFG_TOOLS_PATH/cli  --private-key $VALIDATOR_PRIVATE_KEY_DEV submit-txn --payload-file-path l1x-conf/scripts/010-02-uc-cc-swap-init.json"
       ],
       "14_init_setup": [
         "echo Initializing Setup",
