@@ -11,7 +11,7 @@ services:
       - CASSANDRA_BROADCAST_ADDRESS=cassandra1
       - CASSANDRA_LISTEN_ADDRESS=cassandra1
     volumes:
-      - cassandra1_data:/var/lib/cassandra
+      - $CASSANDRA1_DATA:/var/lib/cassandra
       - ./l1x-conf/cassandra-env.sh:/etc/cassandra/cassandra-env.sh
     networks:
       - cassandra-network
@@ -36,7 +36,7 @@ services:
       - CASSANDRA_CLUSTER_NAME=l1x-cassandra
       - CASSANDRA_LISTEN_ADDRESS=cassandra2
     volumes:
-      - cassandra2_data:/var/lib/cassandra
+      - $CASSANDRA2_DATA:/var/lib/cassandra
     networks:
       - cassandra-network
     healthcheck:
@@ -47,10 +47,6 @@ services:
       start_period: 30s
     depends_on:
       - cassandra1
-
-volumes:
-  cassandra1_data:
-  cassandra2_data:
 
 networks:
   cassandra-network:
