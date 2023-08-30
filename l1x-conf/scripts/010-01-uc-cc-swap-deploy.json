@@ -1,6 +1,6 @@
 {
   "smart_contract_deployment": [
-    "PUBLIC",
+    "PRIVATE",
     "L1XVM",
     { "file": "./l1x-artifacts/cross_chain_swap.o" }
   ]

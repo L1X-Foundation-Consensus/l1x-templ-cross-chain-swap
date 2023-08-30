@@ -28,7 +28,7 @@ processes:
       command: "pkill server && echo 'L1X server down!' > /dev/null"
     availability:
       restart: "on_failure"
-      backoff_seconds: 3
+      backoff_seconds: 5
     environment:
       - 'VALIDATOR_PRIVATE_KEY_DEV=$VALIDATOR_PRIVATE_KEY_DEV'
       - 'VALIDATOR_PUBLIC_KEY_DEV=$VALIDATOR_PUBLIC_KEY_DEV'
