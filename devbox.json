@@ -1,12 +1,13 @@
 {
-  "packages": ["clang_16@16.0.6", "llvm_16@16.0.1", "cassandra_4@4.1.2"],
+  "packages": ["cassandra_4@4.1.2", "yq@3.2.2", "llvm_15@15.0.7"],
   "env": {
+    "RUST_LOG": "info",
     "CASSANDRA_HOST": "127.0.0.1",
     "CASSANDRA_PORT": "9042",
-    "REPLICATION_ENABLED": "true",
     "L1X_BUILD_CFG_ARTIFACTS_PATH": "$PWD/l1x-artifacts",
     "L1X_BUILD_CFG_CONTRACT_NAME": "cross_chain_swap",
     "L1X_BUILD_CFG_TOOLS_PATH": "$PWD/l1x-tools",
+    "REPLICATION_ENABLED": "true",
     "VALIDATOR_PRIVATE_KEY_DEV": "6d657bbe6f7604fb53bc22e0b5285d3e2ad17f64441b2dc19b648933850f9b46",
     "VALIDATOR_PUBLIC_KEY_DEV": "0215edb7e9a64f9970c60d94b866b73686980d734874382ad1002700e5d870d945"
   },
@@ -26,7 +27,7 @@
       ],
       "07_prune_devnode": [
         "echo 'Prune L1X devnode service resources...'",
-        "docker-compose down",
+        "docker-compose -f docker-compose-cassandra-snitch.yml down",
         "docker volume rm l1x-templ-cross-chain-swap_cassandra1_data",
         "docker volume rm l1x-templ-cross-chain-swap_cassandra2_data"
       ],
@@ -38,7 +39,7 @@
       "10_compile": [
         "echo 'Compiling Contract $L1X_BUILD_CFG_CONTRACT_NAME ...'",
         "if [ ! -d $L1X_BUILD_CFG_ARTIFACTS_PATH ]; then mkdir $L1X_BUILD_CFG_ARTIFACTS_PATH; fi",
-        "cd ./l1x-contracts/cross-chain-swap && ./build.sh",
+        "./l1x-contracts/cross-chain-swap/build.sh",
         "cp target/wasm32-unknown-unknown/release/$L1X_BUILD_CFG_CONTRACT_NAME.wasm $L1X_BUILD_CFG_ARTIFACTS_PATH/.",
         "$L1X_BUILD_CFG_TOOLS_PATH/wasm-llvmir $L1X_BUILD_CFG_ARTIFACTS_PATH/$L1X_BUILD_CFG_CONTRACT_NAME.wasm",
         "$L1X_BUILD_CFG_TOOLS_PATH/build_ebpf.sh $L1X_BUILD_CFG_ARTIFACTS_PATH/$L1X_BUILD_CFG_CONTRACT_NAME.ll"
@@ -46,11 +47,11 @@
       "11_clean": ["cargo clean"],
       "12_deploy_contract": [
         "echo Deploying Contract $L1X_BUILD_CFG_CONTRACT_NAME",
-        "RUST_LOG=info $L1X_BUILD_CFG_TOOLS_PATH/cli --private-key $VALIDATOR_PRIVATE_KEY_DEV submit-txn --payload-file-path l1x-conf/scripts/010-01-uc-cc-swap-deploy.json"
+        "RUST_LOG=$RUST_LOG $L1X_BUILD_CFG_TOOLS_PATH/cli --private-key $VALIDATOR_PRIVATE_KEY_DEV submit-txn --payload-file-path l1x-conf/scripts/010-01-uc-cc-swap-deploy.json"
       ],
       "13_init_contract": [
         "echo Init Contract $L1X_BUILD_CFG_CONTRACT_NAME",
-        "RUST_LOG=info $L1X_BUILD_CFG_TOOLS_PATH/cli  --private-key $VALIDATOR_PRIVATE_KEY_DEV submit-txn --payload-file-path l1x-conf/scripts/010-02-uc-cc-swap-init.json"
+        "RUST_LOG=$RUST_LOG $L1X_BUILD_CFG_TOOLS_PATH/cli  --private-key $VALIDATOR_PRIVATE_KEY_DEV submit-txn --payload-file-path l1x-conf/scripts/010-02-uc-cc-swap-init.json"
       ],
       "14_init_setup": [
         "echo Initializing Setup",

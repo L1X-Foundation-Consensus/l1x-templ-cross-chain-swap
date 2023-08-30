@@ -22,7 +22,7 @@ processes:
       backoff_seconds: 2
 
   l1x_node_server:
-    command: "RUST_LOG=trace $L1X_BUILD_CFG_TOOLS_PATH/server --dev"
+    command: "$L1X_BUILD_CFG_TOOLS_PATH/server --dev"
     is_daemon: true
     shutdown:
       command: "pkill server && echo 'L1X server down!' > /dev/null"
@@ -42,7 +42,7 @@ processes:
       - 'DEV_MODE=true'
       - 'CASSANDRA_HOST=$CASSANDRA_HOST'
       - 'CASSANDRA_PORT=$CASSANDRA_PORT'
-      - 'RUST_LOG=trace'
+      - 'RUST_LOG=$RUST_LOG'
       - 'REPLICATION_ENABLED=$REPLICATION_ENABLED'
       - 'GRPC_HOST=http://127.0.0.1:50052'
       - 'JSON_RPC_HOST=http://127.0.0.1:50051'

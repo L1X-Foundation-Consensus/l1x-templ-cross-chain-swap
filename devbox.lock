@@ -7,17 +7,17 @@
       "source": "devbox-search",
       "version": "4.1.2"
     },
-    "clang_16@16.0.6": {
-      "last_modified": "2023-07-23T03:35:12Z",
-      "resolved": "github:NixOS/nixpkgs/af8cd5ded7735ca1df1a1174864daab75feeb64a#clang_16",
+    "llvm_15@15.0.7": {
+      "last_modified": "2023-02-24T09:01:09Z",
+      "resolved": "github:NixOS/nixpkgs/7d0ed7f2e5aea07ab22ccb338d27fbe347ed2f11#llvm_15",
       "source": "devbox-search",
-      "version": "16.0.6"
+      "version": "15.0.7"
     },
-    "llvm_16@16.0.1": {
-      "last_modified": "2023-05-14T19:13:12Z",
-      "resolved": "github:NixOS/nixpkgs/3007746b3f5bfcb49e102b517bca891822a41b31#llvm_16",
+    "yq@3.2.2": {
+      "last_modified": "2023-06-22T18:23:33Z",
+      "resolved": "github:NixOS/nixpkgs/7dcd2be8ca287ba3fa63f672dc8761e271422577#yq",
       "source": "devbox-search",
-      "version": "16.0.1"
+      "version": "3.2.2"
     }
   }
 }
