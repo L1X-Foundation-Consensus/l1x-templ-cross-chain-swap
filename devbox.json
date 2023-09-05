@@ -1,66 +1,100 @@
 {
-  "packages": ["cassandra_4@4.1.2", "yq@3.2.2", "llvm_15@15.0.7"],
+  "packages": ["cassandra_4@4.1.2", "nodejs@20.5.1"],
   "env": {
-    "RUST_LOG": "info",
-    "CASSANDRA_HOST": "127.0.0.1",
-    "CASSANDRA_PORT": "9042",
-    "CASSANDRA1_DATA": "./l1x-conf/cassandra1_data",
-    "CASSANDRA2_DATA": "./l1x-conf/cassandra2_data",
-    "L1X_BUILD_CFG_ARTIFACTS_PATH": "$PWD/l1x-artifacts",
-    "L1X_BUILD_CFG_CONTRACT_NAME": "cross_chain_swap",
-    "L1X_BUILD_CFG_TOOLS_PATH": "$PWD/l1x-tools",
-    "REPLICATION_ENABLED": "true",
-    "VALIDATOR_PRIVATE_KEY_DEV": "6d657bbe6f7604fb53bc22e0b5285d3e2ad17f64441b2dc19b648933850f9b46",
-    "VALIDATOR_PUBLIC_KEY_DEV": "0215edb7e9a64f9970c60d94b866b73686980d734874382ad1002700e5d870d945"
+    "L1X_CFG_ARTIFACTS": "./l1x-artifacts",
+    "L1X_CFG_CASSANDRA1_DATA": "./l1x-conf/cassandra1_data",
+    "L1X_CFG_CASSANDRA2_DATA": "./l1x-conf/cassandra2_data",
+    "L1X_CFG_CASSANDRA_HOST": "127.0.0.1",
+    "L1X_CFG_CASSANDRA_PORT": "9042",
+    "L1X_CFG_CHAIN_TYPE": "beta_mainnet",
+    "L1X_CFG_CONTRACT": "cross_chain_swap",
+    "L1X_CFG_DC_CMD_INTF": "docker-compose",
+    "L1X_CFG_DC_FILE": "./devnet-services-dc.yml",
+    "L1X_CFG_TOOLS": "kevincoutinho007/l1x-toolkit:0.1"
   },
   "shell": {
-    "init_hook": ["echo 'Welcome to devbox!' > /dev/null"],
+    "init_hook": ["echo Welcome to l1x-ft, Happy Coding! > /dev/null"],
     "scripts": {
+      "01_init_eth_setup": [
+        "echo Installing eth-contracts dependency packages! > /dev/null",
+        "cd ./eth-contracts && npm install"
+      ],
+      "01_init_setup": [
+        "echo Initializing Setup",
+        "if [ ! -d $L1X_CFG_ARTIFACTS ]; then mkdir $L1X_CFG_ARTIFACTS; fi",
+        "if [ ! -d $L1X_CFG_CASSANDRA1_DATA ]; then mkdir $L1X_CFG_CASSANDRA1_DATA; fi",
+        "if [ ! -d $L1X_CFG_CASSANDRA2_DATA ]; then mkdir $L1X_CFG_CASSANDRA2_DATA; fi"
+      ],
       "05_start_devnode": [
         "echo 'Start L1X devnode services...'",
-        "devbox run 14_init_setup",
+        "devbox run 01_init_setup",
         "devbox services up"
       ],
       "06_stop_devnode": [
         "echo 'Stop L1X devnode services...'",
         "devbox services stop",
-        "pkill server",
-        "docker-compose -f docker-compose-cassandra-snitch.yml down",
+        "$L1X_CFG_DC_CMD_INTF -f $L1X_CFG_DC_FILE down",
         "echo 'Stop L1X devnode services... Done!!!'"
       ],
       "07_prune_devnode": [
         "echo 'Prune L1X devnode service resources...'",
-        "docker-compose -f docker-compose-cassandra-snitch.yml down",
-        "sudo rm -Rf $CASSANDRA1_DATA/*",
-        "sudo rm -Rf $CASSANDRA2_DATA/*"
+        "$L1X_CFG_DC_CMD_INTF -f $L1X_CFG_DC_FILE down",
+        "sudo rm -Rf $L1X_CFG_CASSANDRA1_DATA/*",
+        "sudo rm -Rf $L1X_CFG_CASSANDRA2_DATA/*"
       ],
-      "08_check_devnode_state": [
-        "echo 'Get L1X devnode services state...'",
-        "cqlsh -e 'SELECT * FROM system.local;' $CASSANDRA_HOST $CASSANDRA_PORT",
-        "$L1X_BUILD_CFG_TOOLS_PATH/cli chain-state"
+      "08_check_chain_state": [
+        "echo 'Get L1X chain state...'",
+        "$L1X_CFG_DC_CMD_INTF -f $L1X_CFG_DC_FILE run --rm l1x-tools-get-chain-state"
+      ],
+      "08_check_devnet_db_state": [
+        "echo 'Get L1X chain state...'",
+        "cqlsh -e 'SELECT * FROM system.local;' $L1X_CFG_CASSANDRA_HOST $L1X_CFG_CASSANDRA_PORT"
+      ],
+      "10_eth_compile": [
+        "echo Compiling Eth Contracts ...",
+        "echo $PWD && cd ./eth-contracts && npx hardhat compile"
       ],
       "10_compile": [
-        "echo 'Compiling Contract $L1X_BUILD_CFG_CONTRACT_NAME ...'",
-        "devbox run 14_init_setup",
-        "./l1x-contracts/cross-chain-swap/build.sh",
-        "cp target/wasm32-unknown-unknown/release/$L1X_BUILD_CFG_CONTRACT_NAME.wasm $L1X_BUILD_CFG_ARTIFACTS_PATH/.",
-        "$L1X_BUILD_CFG_TOOLS_PATH/wasm-llvmir $L1X_BUILD_CFG_ARTIFACTS_PATH/$L1X_BUILD_CFG_CONTRACT_NAME.wasm",
-        "$L1X_BUILD_CFG_TOOLS_PATH/build_ebpf.sh $L1X_BUILD_CFG_ARTIFACTS_PATH/$L1X_BUILD_CFG_CONTRACT_NAME.ll"
+        "echo Compiling Contract $L1X_CFG_CONTRACT ...",
+        "devbox run 01_init_setup",
+        "./l1x-contracts/l1x-ft/build.sh",
+        "cp target/wasm32-unknown-unknown/release/$L1X_CFG_CONTRACT.wasm $L1X_CFG_ARTIFACTS/.",
+        "$L1X_CFG_DC_CMD_INTF -f $L1X_CFG_DC_FILE run --rm -e INTF_ARG_CONTRACT=$L1X_CFG_CONTRACT l1x-tools-intf-gen-ir",
+        "$L1X_CFG_DC_CMD_INTF -f $L1X_CFG_DC_FILE run --rm -e INTF_ARG_CONTRACT=$L1X_CFG_CONTRACT l1x-tools-intf-gen-bpf"
       ],
-      "11_clean": ["cargo clean"],
+      "11_clean": ["cargo clean", "rm -Rf $L1X_CFG_ARTIFACTS/*.*"],
+      "11_clean_logs": ["rm -Rf ./devbox-services.log"],
       "12_deploy_contract": [
-        "echo Deploying Contract $L1X_BUILD_CFG_CONTRACT_NAME",
-        "RUST_LOG=$RUST_LOG $L1X_BUILD_CFG_TOOLS_PATH/cli --private-key $VALIDATOR_PRIVATE_KEY_DEV submit-txn --payload-file-path l1x-conf/scripts/010-01-uc-cc-swap-deploy.json"
+        "echo Deploying Contract $L1X_CFG_CONTRACT",
+        "$L1X_CFG_DC_CMD_INTF -f $L1X_CFG_DC_FILE run --rm -e INTF_ARG_OWNER=super -e INTF_ARG_PAYLOAD=010-01-uc-ft-deploy.json l1x-tools-intf-sub-txn"
       ],
       "13_init_contract": [
-        "echo Init Contract $L1X_BUILD_CFG_CONTRACT_NAME",
-        "RUST_LOG=$RUST_LOG $L1X_BUILD_CFG_TOOLS_PATH/cli  --private-key $VALIDATOR_PRIVATE_KEY_DEV submit-txn --payload-file-path l1x-conf/scripts/010-02-uc-cc-swap-init.json"
+        "echo Init Contract $L1X_CFG_CONTRACT",
+        "$L1X_CFG_DC_CMD_INTF -f $L1X_CFG_DC_FILE run --rm -e INTF_ARG_OWNER=super -e INTF_ARG_PAYLOAD=010-02-uc-ft-init.json l1x-tools-intf-sub-txn"
       ],
-      "14_init_setup": [
-        "echo Initializing Setup",
-        "if [ ! -d $L1X_BUILD_CFG_ARTIFACTS_PATH ]; then mkdir $L1X_BUILD_CFG_ARTIFACTS_PATH; fi",
-        "if [ ! -d $CASSANDRA1_DATA ]; then mkdir $CASSANDRA1_DATA; fi",
-        "if [ ! -d $CASSANDRA2_DATA ]; then mkdir $CASSANDRA2_DATA; fi"
+      "15_ft_token_balance_ava": [
+        "echo token_balance_ava ::",
+        "$L1X_CFG_DC_CMD_INTF -f $L1X_CFG_DC_FILE run --rm -e INTF_ARG_OWNER=ava -e INTF_ARG_PAYLOAD=010-03-uc-check-ava-balance.json l1x-tools-intf-read-only-func-call"
+      ],
+      "16_ft_token_balance_bobby": [
+        "echo token_balance_bobby ::",
+        "$L1X_CFG_DC_CMD_INTF -f $L1X_CFG_DC_FILE run --rm -e INTF_ARG_OWNER=bobby -e INTF_ARG_PAYLOAD=010-04-uc-check-bobby-balance.json l1x-tools-intf-read-only-func-call"
+      ],
+      "17_ft_token_balance_emma": [
+        "echo token_balance_emma ::",
+        "$L1X_CFG_DC_CMD_INTF -f $L1X_CFG_DC_FILE run --rm -e INTF_ARG_OWNER=emma -e INTF_ARG_PAYLOAD=010-05-uc-check-emma-balance.json l1x-tools-intf-read-only-func-call"
+      ],
+      "18_mint_ava_to_emma": [
+        "echo mint_ava_to_emma ::",
+        "$L1X_CFG_DC_CMD_INTF -f $L1X_CFG_DC_FILE run --rm -e INTF_ARG_OWNER=ava -e INTF_ARG_PAYLOAD=010-20-uc-mint-ava-to-emma.json l1x-tools-intf-sub-txn"
+      ],
+      "30_chk_balance_super": [
+        "echo chk_balance_super",
+        "$L1X_CFG_DC_CMD_INTF -f $L1X_CFG_DC_FILE run --rm -e INTF_ARG_OWNER=super l1x-tools-get-account-state"
+      ],
+      "31_chk_balance_ava": [
+        "echo chk_balance_ava",
+        "$L1X_CFG_DC_CMD_INTF -f $L1X_CFG_DC_FILE run --rm -e INTF_ARG_OWNER=ava l1x-tools-get-account-state"
       ]
     }
   }
