@@ -20,10 +20,10 @@ while [[ $# -gt 0 ]]; do
 done
 
 if [[ -z "$dev" || -z "$key_type" ]]; then
-  echo "Usage: get_dev_address.sh --dev ava --type pub"
+  echo "Usage: get_dev_address.sh --dev ava --type pub_key"
   exit 1
 fi
 
-value=$(yq ".dev_accounts.$dev.$key_type" l1x-conf/l1x_dev_wallets.yaml)
+value=$(yq ".dev_accounts.$dev.$key_type" $L1X_CFG_WS_HOME/l1x-conf/l1x_dev_wallets.yaml)
 
 echo $value | sed 's/"//g'

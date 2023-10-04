@@ -1,0 +1,9 @@
+{
+  "contract_instance_address": {
+    "hex": "64ffa78331445b090c43d15df08996006a135b72"
+  },
+  "function": { "text": "get_sources_from" },
+  "arguments": {
+    "text": "{\"from_index\": \"0\" }"
+  }
+}

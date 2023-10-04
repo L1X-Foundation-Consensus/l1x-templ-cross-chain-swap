@@ -1,100 +1,184 @@
 {
-  "packages": ["cassandra_4@4.1.2", "nodejs@20.5.1"],
+  "packages": [
+    "cassandra_4@4.1.2",
+    "nodejs@18.14.2",
+    "yarn@1.22.19",
+    "yq@3.2.3",
+    "openssl@3.0.10"
+  ],
   "env": {
-    "L1X_CFG_ARTIFACTS": "./l1x-artifacts",
-    "L1X_CFG_CASSANDRA1_DATA": "./l1x-conf/cassandra1_data",
-    "L1X_CFG_CASSANDRA2_DATA": "./l1x-conf/cassandra2_data",
-    "L1X_CFG_CASSANDRA_HOST": "127.0.0.1",
-    "L1X_CFG_CASSANDRA_PORT": "9042",
-    "L1X_CFG_CHAIN_TYPE": "beta_mainnet",
-    "L1X_CFG_CONTRACT": "cross_chain_swap",
+    "L1X_CFG_TOOLS": "kevincoutinho007/l1x-toolkit:0.5",
+    "L1X_CFG_CHAIN_TYPE": "local_devnet",
+    "L1X_CFG_WS_HOME": "$PWD",
+    "L1X_CFG_ARTIFACTS": "$PWD/l1x-artifacts",
+    "L1X_CFG_DRT_ARTIFACTS": "/home/l1x/l1x-ws/l1x-artifacts",
+    "L1X_CFG_EVM_ARTIFACTS": "$PWD/l1x-evm-artifacts",
+    "L1X_CFG_TRACES": "$PWD/l1x-traces",
+    "L1X_CFG_CLI_SCRIPTS": "$PWD/l1x-conf/scripts",
     "L1X_CFG_DC_CMD_INTF": "docker-compose",
     "L1X_CFG_DC_FILE": "./devnet-services-dc.yml",
-    "L1X_CFG_TOOLS": "kevincoutinho007/l1x-toolkit:0.1"
+    "L1X_CFG_CASSANDRA1_DATA": "$PWD/l1x-conf/cassandra1_data",
+    "L1X_CFG_CASSANDRA2_DATA": "$PWD/l1x-conf/cassandra2_data",
+    "L1X_CFG_CASSANDRA_HOST": "127.0.0.1",
+    "L1X_CFG_CASSANDRA_PORT": "9042",
+    "L1X_CFG_EVENT_LISTENER_LEADER_PORT": "8001",
+    "L1X_CFG_EVENT_LISTENER_REGULAR1_PORT": "8002",
+    "L1X_CFG_EVENT_LISTENER_REGULAR2_PORT": "8003"
   },
   "shell": {
     "init_hook": ["echo Welcome to l1x-ft, Happy Coding! > /dev/null"],
     "scripts": {
-      "01_init_eth_setup": [
-        "echo Installing eth-contracts dependency packages! > /dev/null",
-        "cd ./eth-contracts && npm install"
-      ],
       "01_init_setup": [
         "echo Initializing Setup",
         "if [ ! -d $L1X_CFG_ARTIFACTS ]; then mkdir $L1X_CFG_ARTIFACTS; fi",
+        "if [ ! -d $L1X_CFG_TRACES ]; then mkdir $L1X_CFG_TRACES; fi",
+        "if [ ! -d $L1X_CFG_CLI_SCRIPTS/l1x-forge-cli ]; then mkdir $L1X_CFG_CLI_SCRIPTS/l1x-forge-cli; fi",
         "if [ ! -d $L1X_CFG_CASSANDRA1_DATA ]; then mkdir $L1X_CFG_CASSANDRA1_DATA; fi",
-        "if [ ! -d $L1X_CFG_CASSANDRA2_DATA ]; then mkdir $L1X_CFG_CASSANDRA2_DATA; fi"
+        "if [ ! -d $L1X_CFG_CASSANDRA2_DATA ]; then mkdir $L1X_CFG_CASSANDRA2_DATA; fi",
+        "if [ ! -d $L1X_CFG_EVM_ARTIFACTS ]; then mkdir $L1X_CFG_EVM_ARTIFACTS; fi"
       ],
-      "05_start_devnode": [
-        "echo 'Start L1X devnode services...'",
-        "devbox run 01_init_setup",
-        "devbox services up"
+      "01_teardown_setup": [
+        "pkill --signal 9 -f 'npm exec hardhat node' && pkill --signal 9 -f 'hardhat node'"
       ],
-      "06_stop_devnode": [
-        "echo 'Stop L1X devnode services...'",
-        "devbox services stop",
-        "$L1X_CFG_DC_CMD_INTF -f $L1X_CFG_DC_FILE down",
-        "echo 'Stop L1X devnode services... Done!!!'"
+      "02_check_chain_state": [
+        "echo '**** ⏳ Get L1X chain state ⏳ ****'",
+        "$L1X_CFG_DC_CMD_INTF -f $L1X_CFG_DC_FILE run --rm l1x-tools-get-chain-state",
+        "echo '⏳ **************************************************************** ⏳'"
       ],
-      "07_prune_devnode": [
+      "02_check_devnet_db_state": [
+        "echo 'Get L1X chain state...'",
+        "cqlsh -e 'SELECT * FROM system.local;' $L1X_CFG_CASSANDRA_HOST $L1X_CFG_CASSANDRA_PORT"
+      ],
+      "02_prune_devnode": [
         "echo 'Prune L1X devnode service resources...'",
         "$L1X_CFG_DC_CMD_INTF -f $L1X_CFG_DC_FILE down",
         "sudo rm -Rf $L1X_CFG_CASSANDRA1_DATA/*",
         "sudo rm -Rf $L1X_CFG_CASSANDRA2_DATA/*"
       ],
-      "08_check_chain_state": [
-        "echo 'Get L1X chain state...'",
-        "$L1X_CFG_DC_CMD_INTF -f $L1X_CFG_DC_FILE run --rm l1x-tools-get-chain-state"
+      "02_start_devnode": [
+        "echo 'Start L1X devnode services...'",
+        "devbox services up --process-compose-file ./process-compose-devnode.yaml"
       ],
-      "08_check_devnet_db_state": [
-        "echo 'Get L1X chain state...'",
-        "cqlsh -e 'SELECT * FROM system.local;' $L1X_CFG_CASSANDRA_HOST $L1X_CFG_CASSANDRA_PORT"
+      "02_stop_devnode": [
+        "echo 'Stop L1X devnode services...'",
+        "devbox services stop --all-projects",
+        "$L1X_CFG_DC_CMD_INTF -f $L1X_CFG_DC_FILE down l1x-node",
+        "$L1X_CFG_DC_CMD_INTF -f $L1X_CFG_DC_FILE down cassandra2",
+        "$L1X_CFG_DC_CMD_INTF -f $L1X_CFG_DC_FILE down cassandra1",
+        "echo 'Stop L1X devnode services... Done!!!'"
       ],
-      "10_eth_compile": [
-        "echo Compiling Eth Contracts ...",
-        "echo $PWD && cd ./eth-contracts && npx hardhat compile"
+      "03_01_start_monitor_services_leader": [
+        "echo 'Start L1X Offchain Monitor Services...'",
+        "devbox run 03_00_start_monitor_services_cmd l1x-event-listener-leader"
       ],
-      "10_compile": [
-        "echo Compiling Contract $L1X_CFG_CONTRACT ...",
+      "03_02_start_monitor_services_regular1": [
+        "echo 'Start L1X Offchain Monitor Services...'",
+        "devbox run 03_00_start_monitor_services_cmd l1x-event-listener-regular1"
+      ],
+      "03_03_start_monitor_services_regular2": [
+        "echo 'Start L1X Offchain Monitor Services...'",
+        "devbox run 03_00_start_monitor_services_cmd l1x-event-listener-regular2"
+      ],
+      "03_00_start_monitor_services_cmd": [
+        "echo 'Start L1X Offchain Monitor Service $1 ...'",
+        "SOURCE_REGISTRY_ADDRESS=$(l1x-conf/get_l1x_vm_contract_instance_address.sh l1x_vm source_registry.o instance XTALK_SOURCE_REGISTRY inst_address)",
+        "SOURCE_REGISTRY_ADDRESS=${SOURCE_REGISTRY_ADDRESS#0x}",
+        "echo Source Registry Address :: $SOURCE_REGISTRY_ADDRESS",
+        "log_trace_file=$L1X_CFG_TRACES/$1-$(date '+%d-%m-%y-%H%M').txt",
+        "$L1X_CFG_DC_CMD_INTF -f $L1X_CFG_DC_FILE run --rm -e INTF_ARG_REGISTRY_CONTRACT_ADDRESS=$SOURCE_REGISTRY_ADDRESS $1 2>&1 | tee $log_trace_file"
+      ],
+      "03_04_stop_monitor_services": [
+        "echo 'Stop L1X Offchain Monitor Services...'",
+        "docker stop $(docker ps -a | grep 'l1x-event-listener' | awk '{print $1}')",
+        "docker stop $(docker ps -a | grep 'l1x-node-signer' | awk '{print $1}')",
+        "echo 'Stop Offchain Monitor Services... Done!!!'"
+      ],
+      "04_01_start_monitor_signer_node": [
+        "echo 'Start L1X Offchain Monitor Signer Node Service ...'",
+        "log_trace_file=$L1X_CFG_TRACES/l1x-node-signer-$(date '+%d-%m-%y-%H%M').txt",
+        "$L1X_CFG_DC_CMD_INTF -f $L1X_CFG_DC_FILE run --rm l1x-node-signer 2>&1 | tee $log_trace_file"
+      ],
+      "10_01_compile_ebpf": [
+        "CONTRACT1_SOURCE_REGISTRY=source_registry",
+        "echo 10_compile_l1x :: Compiling Contract $CONTRACT1_SOURCE_REGISTRY ...",
         "devbox run 01_init_setup",
-        "./l1x-contracts/l1x-ft/build.sh",
-        "cp target/wasm32-unknown-unknown/release/$L1X_CFG_CONTRACT.wasm $L1X_CFG_ARTIFACTS/.",
-        "$L1X_CFG_DC_CMD_INTF -f $L1X_CFG_DC_FILE run --rm -e INTF_ARG_CONTRACT=$L1X_CFG_CONTRACT l1x-tools-intf-gen-ir",
-        "$L1X_CFG_DC_CMD_INTF -f $L1X_CFG_DC_FILE run --rm -e INTF_ARG_CONTRACT=$L1X_CFG_CONTRACT l1x-tools-intf-gen-bpf"
+        "devbox run 10_00_compile_ebpf_cmd $CONTRACT1_SOURCE_REGISTRY",
+        "CONTRACT2_XTALK_SWAP_FLOW=xtalk_swap_flow",
+        "echo Compiling Contract $CONTRACT2_XTALK_SWAP_FLOW ...",
+        "devbox run 10_00_compile_ebpf_cmd $CONTRACT2_XTALK_SWAP_FLOW"
       ],
-      "11_clean": ["cargo clean", "rm -Rf $L1X_CFG_ARTIFACTS/*.*"],
-      "11_clean_logs": ["rm -Rf ./devbox-services.log"],
-      "12_deploy_contract": [
-        "echo Deploying Contract $L1X_CFG_CONTRACT",
-        "$L1X_CFG_DC_CMD_INTF -f $L1X_CFG_DC_FILE run --rm -e INTF_ARG_OWNER=super -e INTF_ARG_PAYLOAD=010-01-uc-ft-deploy.json l1x-tools-intf-sub-txn"
+      "10_00_compile_ebpf_cmd": [
+        "echo 10_00_compile_ebpf_cmd :: Compiling Contract $1 ...",
+        "devbox run 01_init_setup",
+        "./l1x-contracts/$1/build.sh",
+        "cp target/wasm32-unknown-unknown/release/$1.wasm $L1X_CFG_ARTIFACTS/.",
+        "$L1X_CFG_DC_CMD_INTF -f $L1X_CFG_DC_FILE run --rm -e INTF_ARG_CONTRACT=$1 l1x-tools-intf-gen-ir",
+        "$L1X_CFG_DC_CMD_INTF -f $L1X_CFG_DC_FILE run --rm -e INTF_ARG_CONTRACT=$1 l1x-tools-intf-gen-bpf"
       ],
-      "13_init_contract": [
-        "echo Init Contract $L1X_CFG_CONTRACT",
-        "$L1X_CFG_DC_CMD_INTF -f $L1X_CFG_DC_FILE run --rm -e INTF_ARG_OWNER=super -e INTF_ARG_PAYLOAD=010-02-uc-ft-init.json l1x-tools-intf-sub-txn"
+      "11_clean_logs": [
+        "rm -Rf ./devbox-services.log",
+        "rm -Rf $L1X_CFG_TRACES/*.*",
+        "rm -Rf $L1X_CFG_CLI_SCRIPTS/l1x-forge-cli/*.*"
       ],
-      "15_ft_token_balance_ava": [
-        "echo token_balance_ava ::",
-        "$L1X_CFG_DC_CMD_INTF -f $L1X_CFG_DC_FILE run --rm -e INTF_ARG_OWNER=ava -e INTF_ARG_PAYLOAD=010-03-uc-check-ava-balance.json l1x-tools-intf-read-only-func-call"
+      "11_clean_objs": [
+        "echo Cleaning the workspace artifacts ...",
+        "cargo clean",
+        "rm -Rf $L1X_CFG_ARTIFACTS/*.*"
       ],
-      "16_ft_token_balance_bobby": [
-        "echo token_balance_bobby ::",
-        "$L1X_CFG_DC_CMD_INTF -f $L1X_CFG_DC_FILE run --rm -e INTF_ARG_OWNER=bobby -e INTF_ARG_PAYLOAD=010-04-uc-check-bobby-balance.json l1x-tools-intf-read-only-func-call"
+      "18_cli_ro_call_cmd": [
+        "echo Init Contract $1",
+        "$L1X_CFG_DC_CMD_INTF -f $L1X_CFG_DC_FILE run --rm -e INTF_ARG_OWNER=super -e INTF_ARG_PAYLOAD=$1 l1x-tools-intf-read-only-func-call"
       ],
-      "17_ft_token_balance_emma": [
-        "echo token_balance_emma ::",
-        "$L1X_CFG_DC_CMD_INTF -f $L1X_CFG_DC_FILE run --rm -e INTF_ARG_OWNER=emma -e INTF_ARG_PAYLOAD=010-05-uc-check-emma-balance.json l1x-tools-intf-read-only-func-call"
+      "18_cli_ro_get_sources_from_registry": [
+        "echo event-registry call register_new_source",
+        "devbox run 18_cli_ro_call_cmd 012-02-uc-event-registry-get-source-from.json"
       ],
-      "18_mint_ava_to_emma": [
-        "echo mint_ava_to_emma ::",
-        "$L1X_CFG_DC_CMD_INTF -f $L1X_CFG_DC_FILE run --rm -e INTF_ARG_OWNER=ava -e INTF_ARG_PAYLOAD=010-20-uc-mint-ava-to-emma.json l1x-tools-intf-sub-txn"
+      "18_cli_sub_txn_register_source_registry": [
+        "echo event-registry call register_new_source",
+        "devbox run 41_cli_init_ebpf_cmd 012-01-uc-event-registry-register-new-source.json"
       ],
-      "30_chk_balance_super": [
-        "echo chk_balance_super",
-        "$L1X_CFG_DC_CMD_INTF -f $L1X_CFG_DC_FILE run --rm -e INTF_ARG_OWNER=super l1x-tools-get-account-state"
+      "40_cli_deploy_ebpf": [
+        "echo Deploying eBPF Contracts",
+        "devbox run 40_cli_deploy_ebpf_cmd 010-01-uc-deploy-xtalk-flow-control.json",
+        "sleep 10",
+        "devbox run 40_cli_deploy_ebpf_cmd 010-02-uc-deploy-source-registry.json"
       ],
-      "31_chk_balance_ava": [
-        "echo chk_balance_ava",
-        "$L1X_CFG_DC_CMD_INTF -f $L1X_CFG_DC_FILE run --rm -e INTF_ARG_OWNER=ava l1x-tools-get-account-state"
+      "40_cli_deploy_ebpf_cmd": [
+        "echo Deploying Contract $1",
+        "$L1X_CFG_DC_CMD_INTF -f $L1X_CFG_DC_FILE run --rm -e INTF_ARG_OWNER=super -e INTF_ARG_PAYLOAD=$1 l1x-tools-intf-sub-txn"
+      ],
+      "41_cli_init_ebpf": [
+        "echo Init eBPF Contracts",
+        "devbox run 41_cli_init_ebpf_cmd 011-01-uc-init-xtalk-flow-control.json",
+        "sleep 10",
+        "devbox run 41_cli_init_ebpf_cmd 011-02-uc-init-source-registry.json"
+      ],
+      "41_cli_init_ebpf_cmd": [
+        "echo Init Contract $1",
+        "$L1X_CFG_DC_CMD_INTF -f $L1X_CFG_DC_FILE run --rm -e INTF_ARG_OWNER=super -e INTF_ARG_PAYLOAD=$1 l1x-tools-intf-sub-txn"
+      ],
+      "60_forge_install_ebpf_cmd_force_deploy": [
+        "echo ebpf contract deploy and Init - Args",
+        "echo :: $1, $2, $3",
+        "RUST_LOG=info ./l1x-misc/install-bin/l1x-forge vm-install-contract --vm-type ebpf --force --artifact-id $1 --contract-id $2 --owner $3"
+      ],
+      "61_forge_install_ebpf_cmd_reuse_deploy": [
+        "echo ebpf contract Init - Args ::",
+        "echo    - $1, $2, $3",
+        "RUST_LOG=info ./l1x-misc/install-bin/l1x-forge vm-install-contract --vm-type ebpf --artifact-id $1 --contract-id $2 --owner $3"
+      ],
+      "80_00_forge_install_ebpf_all": [
+        "echo forge Install all ebpf contracts",
+        "devbox run 80_01_forge_install_ebpf_source_registry",
+        "devbox run 80_02_forge_install_ebpf_xtalk_swap_flow"
+      ],
+      "80_01_forge_install_ebpf_source_registry": [
+        "echo forge Install ebpf source_registry.o",
+        "devbox run 60_forge_install_ebpf_cmd_force_deploy source_registry.o XTALK_SOURCE_REGISTRY super"
+      ],
+      "80_02_forge_install_ebpf_xtalk_swap_flow": [
+        "echo forge Install ebpf xtalk_swap_flow.o",
+        "devbox run 60_forge_install_ebpf_cmd_force_deploy xtalk_swap_flow.o XTALK_SWAP_FLOW super"
       ]
     }
   }

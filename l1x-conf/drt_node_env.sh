@@ -25,8 +25,24 @@ export DEV_MODE="true"
 export CASSANDRA_HOST="cassandra1"
 export CASSANDRA_PORT="9042"
 export REPLICATION_ENABLED="true" # make true for production
-export GRPC_HOST="http://127.0.0.1:50052"
-export JSON_RPC_HOST="http://127.0.0.1:50051"
+export GRPC_HOST="http://l1x-node:50052"
+export JSON_RPC_HOST="http://l1x-node:50051"
 
 # 200 Million , Considering 18 Decimals
 export GENESIS_AMOUNT="200000000000000000000000000"
+
+# Env for Event Handler Services
+export L1X_JSON_PORT="50051"
+export L1X_PROTO_PORT="50052"
+export L1X_ENDPOINT="http://l1x-node"
+export GRPC_HOST="http://l1x-node"
+export GRPC_PORT="50052"
+export CLI_ARCH="docker"
+export L1X_CHAIN_CONFIG="/home/l1x/l1x-ws/l1x-conf/event_listener_chain_config.yaml"
+export L1X_P2P_WALLET="/home/l1x/l1x-ws/l1x-conf/event_listener_wallets.json"
+export L1X_LISTENER_ENGINE_MODULE_PATH="/usr/local/bin/"
+export USER_PRIVATE_KEY="e7efc71ab1b2055a474a6593159da8a113ad7025dca27a870e9d535501f1687c"
+export CHAIN_ID=5
+
+export ETHEREUM_GOERLI=904a9154641d44348e7fab88570219e9
+export OPTIMISM_GOERLI=904a9154641d44348e7fab88570219e9

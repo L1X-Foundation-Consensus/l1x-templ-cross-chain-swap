@@ -2,7 +2,7 @@ use std::str::FromStr;
 
 use borsh::{BorshDeserialize, BorshSerialize};
 use ethers;
-use ethers::abi::{ethabi, ParamType, Token};
+use ethers::abi::{encode_packed, ethabi, ParamType, Token};
 use ethers::prelude::{parse_log, EthEvent};
 use ethers::types::{Address, Signature};
 use l1x_sdk::types::{U128, U256, U64};
@@ -20,15 +20,22 @@ const PAYLOAD_2: &str = "finalize_swap";
 const INITIATE_EVENT: &str = "SwapInitiated";
 const EXECUTE_EVENT: &str = "SwapExecuted";
 
-const ETHEREUM_TOKEN_ADDRESS: &str = "0x4603e703309cd6c0b8bada1e724312242ef36ecb";
-const OPTIMISIM_TOKEN_ADDRESS: &str = "0x853f409f60d477b5e4ecdff2f2094d4670afa0a1";
+const ETHEREUM_TOKEN_ADDRESS: &str = "4603e703309cd6c0b8bada1e724312242ef36ecb";
+const OPTIMISIM_TOKEN_ADDRESS: &str =
+    "853F409F60D477B5E4ECDFF2F2094D4670AFA0A1";
 
 const OPTIMISIM_PROVIDER: &str =
     "https://optimism-goerli.infura.io/v3/904a9154641d44348e7fab88570219e9";
-const ETHEREUM_PROVIDER: &str = "https://goerli.infura.io/v3/904a9154641d44348e7fab88570219e9";
+const ETHEREUM_PROVIDER: &str =
+    "https://goerli.infura.io/v3/904a9154641d44348e7fab88570219e9";
 
-const OPTIMISIM_SMART_CONTRACT_ADDRESS: &str = "0x44436A43330122a61A4877E51bA54084D5BD0aC6";
-const ETHEREUM_SMART_CONTRACT_ADDRESS: &str = "0xDa4140B906044aCFb1aF3b34C94A2803D90e96aA";
+const OPTIMISIM_SMART_CONTRACT_ADDRESS: &str =
+    "0x44436A43330122a61A4877E51bA54084D5BD0aC6";
+const ETHEREUM_SMART_CONTRACT_ADDRESS: &str =
+    "0xDa4140B906044aCFb1aF3b34C94A2803D90e96aA";
+
+const OPTIMISIM_CHAIN_ID: u64 = 420;
+const ETHEREUM_CHAIN_ID: u64 = 5;
 
 #[derive(BorshSerialize, BorshDeserialize, Serialize, Deserialize)]
 pub enum Event {
@@ -51,7 +58,9 @@ struct SwapInitiatedSolidityEvent {
     receiving_address: ethers::types::Address,
 }
 
-#[derive(Clone, Debug, BorshSerialize, BorshDeserialize, Serialize, Deserialize)]
+#[derive(
+    Clone, Debug, BorshSerialize, BorshDeserialize, Serialize, Deserialize,
+)]
 pub struct SwapInitiatedEvent {
     global_tx_id: [u8; 32],
     in_token_address: l1x_sdk::types::Address,
@@ -74,7 +83,9 @@ pub struct SwapExecutedSolidityEvent {
     receiving_address: ethers::types::Address,
 }
 
-#[derive(Clone, Debug, BorshSerialize, BorshDeserialize, Serialize, Deserialize)]
+#[derive(
+    Clone, Debug, BorshSerialize, BorshDeserialize, Serialize, Deserialize,
+)]
 pub struct ExecuteSwap {
     global_tx_id: [u8; 32],
     user: l1x_sdk::types::Address,
@@ -93,6 +104,7 @@ pub enum Payload {
 pub struct GetPayloadResponse {
     input_data: String,
     provider: String,
+    chain_id: u64,
     to: Address,
     from: Address,
 }
@@ -126,13 +138,21 @@ impl From<SwapInitiatedSolidityEvent> for SwapInitiatedEvent {
         v.out_amount_min.to_little_endian(&mut out_amount_min);
         Self {
             global_tx_id: v.global_tx_id,
-            in_token_address: l1x_sdk::types::Address::from(v.in_token_address.0),
+            in_token_address: l1x_sdk::types::Address::from(
+                v.in_token_address.0,
+            ),
             in_amount: l1x_sdk::types::U256::from_little_endian(&in_amount),
             source_chain: v.source_chain,
             destination_chain: v.destination_chain,
-            out_token_address: l1x_sdk::types::Address::from(v.out_token_address.0),
-            out_amount_min: l1x_sdk::types::U256::from_little_endian(&out_amount_min),
-            receiving_address: l1x_sdk::types::Address::from(v.receiving_address.0),
+            out_token_address: l1x_sdk::types::Address::from(
+                v.out_token_address.0,
+            ),
+            out_amount_min: l1x_sdk::types::U256::from_little_endian(
+                &out_amount_min,
+            ),
+            receiving_address: l1x_sdk::types::Address::from(
+                v.receiving_address.0,
+            ),
         }
     }
 }
@@ -146,7 +166,9 @@ impl From<SwapExecutedSolidityEvent> for ExecuteSwap {
             user: l1x_sdk::types::Address::from(v.user.0),
             token_address: l1x_sdk::types::Address::from(v.token_address.0),
             amount: l1x_sdk::types::U256::from_little_endian(&amount),
-            receiving_address: l1x_sdk::types::Address::from(v.receiving_address.0),
+            receiving_address: l1x_sdk::types::Address::from(
+                v.receiving_address.0,
+            ),
         }
     }
 }
@@ -159,8 +181,12 @@ impl From<ExecuteSwap> for SwapExecutedSolidityEvent {
             global_tx_id: v.global_tx_id,
             user: ethers::types::Address::from_slice(v.user.as_bytes()),
             amount: ethers::types::U256::from_little_endian(&amount),
-            token_address: ethers::types::Address::from_slice(v.token_address.as_bytes()),
-            receiving_address: ethers::types::Address::from_slice(v.receiving_address.as_bytes()),
+            token_address: ethers::types::Address::from_slice(
+                v.token_address.as_bytes(),
+            ),
+            receiving_address: ethers::types::Address::from_slice(
+                v.receiving_address.as_bytes(),
+            ),
         }
     }
 }
@@ -207,18 +233,24 @@ impl CrossChainSwapFlow {
         contract.save();
     }
 
-    pub fn save_event_data(global_tx_id: String, source_id: U64, event_data: String) {
+    pub fn save_event_data(
+        global_tx_id: String,
+        source_id: U64,
+        event_data: String,
+    ) {
         let mut contract = Self::load();
-        let event_data =
-            base64::decode(event_data.as_bytes()).expect("Can't decode base64 event_data");
+        let event_data = base64::decode(event_data.as_bytes())
+            .expect("Can't decode base64 event_data");
 
         match source_id.0 {
             0 => {
                 let log: ethers::types::Log =
-                    serde_json::from_slice(&event_data).expect("Can't deserialize Log object");
+                    serde_json::from_slice(&event_data)
+                        .expect("Can't deserialize Log object");
                 let event = parse_log::<SwapInitiatedSolidityEvent>(log)
                     .expect("Can't parse SwapInitiatedSolidityEvent");
-                let key = Self::to_key(&global_tx_id, &INITIATE_EVENT.to_string());
+                let key =
+                    Self::to_key(&global_tx_id, &INITIATE_EVENT.to_string());
 
                 let event_data: SwapInitiatedEvent = event.clone().into();
                 contract
@@ -228,7 +260,7 @@ impl CrossChainSwapFlow {
                 let execute_swap = ExecuteSwap {
                     global_tx_id: event_data.global_tx_id,
                     user: event_data.receiving_address,
-                    token_address: event_data.in_token_address,
+                    token_address: event_data.out_token_address,
                     amount: event_data.out_amount_min,
                     receiving_address: event_data.receiving_address,
                 };
@@ -241,11 +273,14 @@ impl CrossChainSwapFlow {
             }
             1 => {
                 let log: ethers::types::Log =
-                    serde_json::from_slice(&event_data).expect("Can't deserialize Log object");
-                let event: ExecuteSwap = parse_log::<SwapExecutedSolidityEvent>(log)
-                    .expect("Can't parse SwapExecutedSolidityEvent")
-                    .into();
-                let key = Self::to_key(&global_tx_id, &EXECUTE_EVENT.to_string());
+                    serde_json::from_slice(&event_data)
+                        .expect("Can't deserialize Log object");
+                let event: ExecuteSwap =
+                    parse_log::<SwapExecutedSolidityEvent>(log)
+                        .expect("Can't parse SwapExecutedSolidityEvent")
+                        .into();
+                let key =
+                    Self::to_key(&global_tx_id, &EXECUTE_EVENT.to_string());
 
                 let event_data: ExecuteSwap = event.clone().into();
                 contract
@@ -271,52 +306,52 @@ impl CrossChainSwapFlow {
     pub fn get_payload_hash_to_sign(global_tx_id: String) -> String {
         let contract = Self::load();
 
-        if let Some(payloads) = contract
-            .payloads
-            .get(&(global_tx_id.to_owned() + PAYLOAD_2))
+        if let Some(payloads) =
+            contract.payloads.get(&(global_tx_id.to_owned() + PAYLOAD_2))
         {
             if let Payload::FinalizeSwap(data) = payloads {
 
                 //return PayloadResponse::FinalizeSwap(data.clone().into());
             }
-        } else if let Some(payloads) = contract
-            .payloads
-            .get(&(global_tx_id.to_owned() + PAYLOAD_1))
+        } else if let Some(payloads) =
+            contract.payloads.get(&(global_tx_id.to_owned() + PAYLOAD_1))
         {
             if let Payload::ExecuteSwap(data) = payloads {
                 let payload: SwapExecutedSolidityEvent = data.clone().into();
-                let string_payload_user = format!("{:X}", payload.user);
-                let string_payload_token_address = format!("{:X}", payload.token_address);
-                let string_payload_amount = format!("{:X}", payload.amount);
-                let string_payload_receiving_address = format!("{:X}", payload.receiving_address);
 
-                let data = &(Self::bytes_to_hex_string(&payload.global_tx_id)
-                    + &string_payload_user.to_ascii_lowercase()
-                    + &string_payload_token_address.to_ascii_lowercase()
-                    + &Self::zero_pad_string(&string_payload_amount.to_ascii_lowercase())
-                    + &string_payload_receiving_address.to_ascii_lowercase())[2..];
+                let mut buf = [0; 32];
+                payload.amount.to_big_endian(&mut buf);
 
-                let payload_hash = ethers::utils::keccak256(hex::decode(data).unwrap());
-                return hex::encode(payload_hash);
+                let bytes = encode_packed(&vec![
+                    Token::FixedBytes(payload.global_tx_id.into()),
+                    Token::Address(payload.user.into()),
+                    Token::Address(payload.token_address.into()),
+                    Token::Bytes(buf.to_vec()),
+                    Token::Address(payload.receiving_address.into()),
+                ])
+                .unwrap();
+
+                return hex::encode(ethers::utils::keccak256(bytes));
             }
         }
         panic!("invalid global transaction id: {}", global_tx_id);
     }
 
-    pub fn get_pay_load(global_tx_id: String, signature: String) -> GetPayloadResponse {
+    pub fn get_pay_load(
+        global_tx_id: String,
+        signature: String,
+    ) -> GetPayloadResponse {
         let contract = Self::load();
         let signature: Signature = Signature::from_str(&signature).unwrap();
 
-        if let Some(payloads) = contract
-            .payloads
-            .get(&(global_tx_id.to_owned() + PAYLOAD_2))
+        if let Some(payloads) =
+            contract.payloads.get(&(global_tx_id.to_owned() + PAYLOAD_2))
         {
             if let Payload::FinalizeSwap(data) = payloads {
                 //return PayloadResponse::FinalizeSwap(data.clone().into());
             }
-        } else if let Some(payloads) = contract
-            .payloads
-            .get(&(global_tx_id.to_owned() + PAYLOAD_1))
+        } else if let Some(payloads) =
+            contract.payloads.get(&(global_tx_id.to_owned() + PAYLOAD_1))
         {
             if let Payload::ExecuteSwap(data) = payloads {
                 let payload: SwapExecutedSolidityEvent = data.clone().into();
@@ -345,23 +380,27 @@ impl CrossChainSwapFlow {
                 ];
 
                 // Encode the transaction data into bytes
-                let encoded_transaction_data = ethabi::encode(&transaction_data);
-                let data_without_function_signature = hex::encode(&encoded_transaction_data);
-                let data = function_selector.to_owned() + &data_without_function_signature;
+                let encoded_transaction_data =
+                    ethabi::encode(&transaction_data);
+                let data_without_function_signature =
+                    hex::encode(&encoded_transaction_data);
+                let data = function_selector.to_owned()
+                    + &data_without_function_signature;
                 let mut _provider = ETHEREUM_PROVIDER;
                 let mut _to = ETHEREUM_SMART_CONTRACT_ADDRESS;
+                let mut chain_id = ETHEREUM_CHAIN_ID;
 
-                if payload.token_address.to_string().to_ascii_lowercase()
+                if format!("{:X}", payload.token_address)
                     == OPTIMISIM_TOKEN_ADDRESS
                 {
                     _provider = OPTIMISIM_PROVIDER;
                     _to = OPTIMISIM_SMART_CONTRACT_ADDRESS;
-                } else {
-
+                    chain_id = OPTIMISIM_CHAIN_ID;
                 }
                 return GetPayloadResponse {
                     input_data: data,
                     provider: _provider.to_string(),
+                    chain_id,
                     to: _to.to_string().parse::<Address>().unwrap(),
                     from: "0xc31beb2a223435a38141Ee15C157672A9fA2997D"
                         .parse::<Address>()
@@ -370,24 +409,6 @@ impl CrossChainSwapFlow {
             }
         }
         panic!("invalid global transaction id: {}", global_tx_id);
-    }
-
-    fn bytes_to_hex_string(bytes: &[u8]) -> String {
-        let hex_chars: Vec<String> = bytes.iter().map(|b| format!("{:02x}", b)).collect();
-        let hex_string = hex_chars.join("");
-        format!("0x{:0<64}", hex_string)
-    }
-
-    fn zero_pad_string(input: &str) -> String {
-        let input_len = input.len();
-        if input_len >= 64 {
-            return input.to_string();
-        }
-
-        let zero_padding = "0".repeat(64 - input_len);
-        let zero_padded_string = format!("{}{}", zero_padding, input);
-
-        zero_padded_string
     }
 
     pub fn total_events() -> U64 {

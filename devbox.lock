@@ -7,11 +7,29 @@
       "source": "devbox-search",
       "version": "4.1.2"
     },
-    "nodejs@20.5.1": {
-      "last_modified": "2023-08-30T00:25:28Z",
-      "resolved": "github:NixOS/nixpkgs/a63a64b593dcf2fe05f7c5d666eb395950f36bc9#nodejs_20",
+    "nodejs@18.14.2": {
+      "last_modified": "2023-03-20T03:01:03Z",
+      "resolved": "github:NixOS/nixpkgs/8276a165b9fa3db1a7a4f29ee29b680e0799b9dc#nodejs",
       "source": "devbox-search",
-      "version": "20.5.1"
+      "version": "18.14.2"
+    },
+    "openssl@3.0.10": {
+      "last_modified": "2023-09-21T17:52:43Z",
+      "resolved": "github:NixOS/nixpkgs/e12483116b3b51a185a33a272bf351e357ba9a99#openssl",
+      "source": "devbox-search",
+      "version": "3.0.10"
+    },
+    "yarn@1.22.19": {
+      "last_modified": "2023-09-04T16:24:30Z",
+      "resolved": "github:NixOS/nixpkgs/3c15feef7770eb5500a4b8792623e2d6f598c9c1#yarn",
+      "source": "devbox-search",
+      "version": "1.22.19"
+    },
+    "yq@3.2.3": {
+      "last_modified": "2023-09-16T18:11:59Z",
+      "resolved": "github:NixOS/nixpkgs/b2e813ada825ef491546ea81f42ef2d37ce71bf6#yq",
+      "source": "devbox-search",
+      "version": "3.2.3"
     }
   }
 }
