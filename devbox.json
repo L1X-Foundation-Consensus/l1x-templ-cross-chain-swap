@@ -160,12 +160,12 @@
       "60_forge_install_ebpf_cmd_force_deploy": [
         "echo ebpf contract deploy and Init - Args",
         "echo :: $1, $2, $3",
-        "RUST_LOG=info ./l1x-misc/install-bin/l1x-forge vm-install-contract --vm-type ebpf --force --artifact-id $1 --contract-id $2 --owner $3"
+        "RUST_LOG=info l1x-forge vm-install-contract --vm-type ebpf --force --artifact-id $1 --contract-id $2 --owner $3"
       ],
       "61_forge_install_ebpf_cmd_reuse_deploy": [
         "echo ebpf contract Init - Args ::",
         "echo    - $1, $2, $3",
-        "RUST_LOG=info ./l1x-misc/install-bin/l1x-forge vm-install-contract --vm-type ebpf --artifact-id $1 --contract-id $2 --owner $3"
+        "RUST_LOG=info l1x-forge vm-install-contract --vm-type ebpf --artifact-id $1 --contract-id $2 --owner $3"
       ],
       "80_00_forge_install_ebpf_all": [
         "echo forge Install all ebpf contracts",
