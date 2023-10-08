@@ -1,18 +1,18 @@
 l1x_vm:
   source_registry.o:
-    deploy_hash: de2ee65a9602e0a557e13f96d5cfcd53c3435cefa3d3428ffd3067191b986e75
-    deploy_address: '"0xe14878db3c2dfad82ffa74bd987f98423318476e"'
+    deploy_hash: 885714d9d38b9054dab2588ab9dc5677a2db57ebf2b3496fcf833d088e797fe9
+    deploy_address: '"0x4649c987310662fd2ef93f2567bfb4bf0ed652fb"'
     instance:
       XTALK_SOURCE_REGISTRY:
-        inst_hash: b245fa9cb812856a9c09132d54f5bd2d0ae866186c793b53cbfc7d2169daf4d2
-        inst_address: '"0x64ffa78331445b090c43d15df08996006a135b72"'
+        inst_hash: ab2b8e53e29e8a4b18c60ed2758a00b0c0c9e73ece9ff09115927111f037eb94
+        inst_address: '"0x4bf30cd8d1d912efc851026aeaad287af54402c7"'
   xtalk_swap_flow.o:
-    deploy_hash: ca47ceb6587de0738d5bfa4e18ecfe982a65e2b33ed8ddd5ea5eb0ec149a40fb
-    deploy_address: '"0xde13a5718e0c0a7c34de6a86b272c097c2561efb"'
+    deploy_hash: d5c170eb4cd365facf384481311559a9c465323a440f8d717e8bbf10818c4b5e
+    deploy_address: '"0x5d3deba9e401feaf63f0787e4602ba70e1bf957a"'
     instance:
       XTALK_SWAP_FLOW:
-        inst_hash: b94906b781ad23aceb798b78f5d9440fed16d594ef8aeedeb99c150611452ff0
-        inst_address: '"0x8db56afe999f2e2d67105f4c6b111469700d7598"'
+        inst_hash: 02edfe4e9a70a657d795be5e9e0e0535140513d2e31ddea28d614ffdc1557ef4
+        inst_address: '"0x8893e9cad2bd6f61ed081aab73322bf105963337"'
 l1x_evm:
   creationAuthorizer.txt:
     deploy_hash: ''

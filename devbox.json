@@ -4,26 +4,29 @@
     "nodejs@18.14.2",
     "yarn@1.22.19",
     "yq@3.2.3",
-    "openssl@3.0.10"
+    "openssl@3.0.10",
+    "clang_16@latest",
+    "libiconv@2.37",
+    "docker-compose@2.21.0"
   ],
   "env": {
     "L1X_CFG_TOOLS": "kevincoutinho007/l1x-toolkit:0.5",
     "L1X_CFG_CHAIN_TYPE": "local_devnet",
     "L1X_CFG_WS_HOME": "$PWD",
     "L1X_CFG_ARTIFACTS": "$PWD/l1x-artifacts",
-    "L1X_CFG_DRT_ARTIFACTS": "/home/l1x/l1x-ws/l1x-artifacts",
-    "L1X_CFG_EVM_ARTIFACTS": "$PWD/l1x-evm-artifacts",
     "L1X_CFG_TRACES": "$PWD/l1x-traces",
     "L1X_CFG_CLI_SCRIPTS": "$PWD/l1x-conf/scripts",
+    "L1X_CFG_EVM_ARTIFACTS": "$PWD/l1x-evm-artifacts",
     "L1X_CFG_DC_CMD_INTF": "docker-compose",
-    "L1X_CFG_DC_FILE": "./devnet-services-dc.yml",
+    "L1X_CFG_DC_FILE": "$PWD/devnet-services-dc.yml",
+    "L1X_CFG_DRT_ARTIFACTS": "/home/l1x/l1x-ws/l1x-artifacts",
+    "L1X_CFG_EVENT_LISTENER_LEADER_PORT": "8001",
+    "L1X_CFG_EVENT_LISTENER_REGULAR1_PORT": "8002",
+    "L1X_CFG_EVENT_LISTENER_REGULAR2_PORT": "8003",
     "L1X_CFG_CASSANDRA1_DATA": "$PWD/l1x-conf/cassandra1_data",
     "L1X_CFG_CASSANDRA2_DATA": "$PWD/l1x-conf/cassandra2_data",
     "L1X_CFG_CASSANDRA_HOST": "127.0.0.1",
-    "L1X_CFG_CASSANDRA_PORT": "9042",
-    "L1X_CFG_EVENT_LISTENER_LEADER_PORT": "8001",
-    "L1X_CFG_EVENT_LISTENER_REGULAR1_PORT": "8002",
-    "L1X_CFG_EVENT_LISTENER_REGULAR2_PORT": "8003"
+    "L1X_CFG_CASSANDRA_PORT": "9042"
   },
   "shell": {
     "init_hook": ["echo Welcome to l1x-ft, Happy Coding! > /dev/null"],
@@ -67,6 +70,14 @@
         "$L1X_CFG_DC_CMD_INTF -f $L1X_CFG_DC_FILE down cassandra1",
         "echo 'Stop L1X devnode services... Done!!!'"
       ],
+      "03_00_start_monitor_services_cmd": [
+        "echo 'Start L1X Offchain Monitor Service $1 ...'",
+        "SOURCE_REGISTRY_ADDRESS=$(l1x-conf/get_l1x_vm_contract_instance_address.sh l1x_vm source_registry.o instance XTALK_SOURCE_REGISTRY inst_address)",
+        "SOURCE_REGISTRY_ADDRESS=${SOURCE_REGISTRY_ADDRESS#0x}",
+        "echo Source Registry Address :: $SOURCE_REGISTRY_ADDRESS",
+        "log_trace_file=$L1X_CFG_TRACES/$1-$(date '+%d-%m-%y-%H%M').txt",
+        "$L1X_CFG_DC_CMD_INTF -f $L1X_CFG_DC_FILE run --rm -e INTF_ARG_REGISTRY_CONTRACT_ADDRESS=$SOURCE_REGISTRY_ADDRESS $1 2>&1 | tee $log_trace_file"
+      ],
       "03_01_start_monitor_services_leader": [
         "echo 'Start L1X Offchain Monitor Services...'",
         "devbox run 03_00_start_monitor_services_cmd l1x-event-listener-leader"
@@ -79,14 +90,6 @@
         "echo 'Start L1X Offchain Monitor Services...'",
         "devbox run 03_00_start_monitor_services_cmd l1x-event-listener-regular2"
       ],
-      "03_00_start_monitor_services_cmd": [
-        "echo 'Start L1X Offchain Monitor Service $1 ...'",
-        "SOURCE_REGISTRY_ADDRESS=$(l1x-conf/get_l1x_vm_contract_instance_address.sh l1x_vm source_registry.o instance XTALK_SOURCE_REGISTRY inst_address)",
-        "SOURCE_REGISTRY_ADDRESS=${SOURCE_REGISTRY_ADDRESS#0x}",
-        "echo Source Registry Address :: $SOURCE_REGISTRY_ADDRESS",
-        "log_trace_file=$L1X_CFG_TRACES/$1-$(date '+%d-%m-%y-%H%M').txt",
-        "$L1X_CFG_DC_CMD_INTF -f $L1X_CFG_DC_FILE run --rm -e INTF_ARG_REGISTRY_CONTRACT_ADDRESS=$SOURCE_REGISTRY_ADDRESS $1 2>&1 | tee $log_trace_file"
-      ],
       "03_04_stop_monitor_services": [
         "echo 'Stop L1X Offchain Monitor Services...'",
         "docker stop $(docker ps -a | grep 'l1x-event-listener' | awk '{print $1}')",
@@ -98,6 +101,14 @@
         "log_trace_file=$L1X_CFG_TRACES/l1x-node-signer-$(date '+%d-%m-%y-%H%M').txt",
         "$L1X_CFG_DC_CMD_INTF -f $L1X_CFG_DC_FILE run --rm l1x-node-signer 2>&1 | tee $log_trace_file"
       ],
+      "10_00_compile_ebpf_cmd": [
+        "echo 10_00_compile_ebpf_cmd :: Compiling Contract $1 ...",
+        "devbox run 01_init_setup",
+        "./l1x-contracts/$1/build.sh",
+        "cp target/wasm32-unknown-unknown/release/$1.wasm $L1X_CFG_ARTIFACTS/.",
+        "$L1X_CFG_DC_CMD_INTF -f $L1X_CFG_DC_FILE run --rm -e INTF_ARG_CONTRACT=$1 l1x-tools-intf-gen-ir",
+        "$L1X_CFG_DC_CMD_INTF -f $L1X_CFG_DC_FILE run --rm -e INTF_ARG_CONTRACT=$1 l1x-tools-intf-gen-bpf"
+      ],
       "10_01_compile_ebpf": [
         "CONTRACT1_SOURCE_REGISTRY=source_registry",
         "echo 10_compile_l1x :: Compiling Contract $CONTRACT1_SOURCE_REGISTRY ...",
@@ -106,14 +117,6 @@
         "CONTRACT2_XTALK_SWAP_FLOW=xtalk_swap_flow",
         "echo Compiling Contract $CONTRACT2_XTALK_SWAP_FLOW ...",
         "devbox run 10_00_compile_ebpf_cmd $CONTRACT2_XTALK_SWAP_FLOW"
-      ],
-      "10_00_compile_ebpf_cmd": [
-        "echo 10_00_compile_ebpf_cmd :: Compiling Contract $1 ...",
-        "devbox run 01_init_setup",
-        "./l1x-contracts/$1/build.sh",
-        "cp target/wasm32-unknown-unknown/release/$1.wasm $L1X_CFG_ARTIFACTS/.",
-        "$L1X_CFG_DC_CMD_INTF -f $L1X_CFG_DC_FILE run --rm -e INTF_ARG_CONTRACT=$1 l1x-tools-intf-gen-ir",
-        "$L1X_CFG_DC_CMD_INTF -f $L1X_CFG_DC_FILE run --rm -e INTF_ARG_CONTRACT=$1 l1x-tools-intf-gen-bpf"
       ],
       "11_clean_logs": [
         "rm -Rf ./devbox-services.log",
